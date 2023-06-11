@@ -1,250 +1,256 @@
 #include "osc_message.h"
+
 #include <memory>
 
-Osc::Message::Message(QNetworkDatagram* datagram) {
-  this->address = QString(datagram->data().constData());
+Osc::Message::Message(QNetworkDatagram* datagram)
+{
+    this->address = QString(datagram->data().constData());
 
-  this->sourceAddress = datagram->senderAddress();
-  this->sourcePort = datagram->senderPort();
+    this->sourceAddress = datagram->senderAddress();
+    this->sourcePort = datagram->senderPort();
 
-  this->destinationAddress = datagram->destinationAddress();
-  this->destinationPort = datagram->destinationPort();
+    this->destinationAddress = datagram->destinationAddress();
+    this->destinationPort = datagram->destinationPort();
 
-  qsizetype format_start = datagram->data().indexOf(',');
-  qsizetype format_end = datagram->data().indexOf('\0', format_start);
+    qsizetype format_start = datagram->data().indexOf(',');
+    qsizetype format_end = datagram->data().indexOf('\0', format_start);
 
-  qsizetype value_marker = format_end + 4 - format_end % 4;
+    qsizetype value_marker = format_end + 4 - format_end % 4;
 
-  for (int i = format_start + 1; i < format_end; i++) {
-    char currentFormat = datagram->data().at(i);
+    for (int i = format_start + 1; i < format_end; i++) {
+        char currentFormat = datagram->data().at(i);
 
-    switch (currentFormat) {
-    case 'i': {
-      qint32 value = 0;
+        switch (currentFormat) {
+        case 'i': {
+            qint32 value = 0;
 
-      QByteArray slice = datagram->data().sliced(value_marker, sizeof(value));
+            QByteArray slice = datagram->data().sliced(value_marker, sizeof(value));
 
-      QDataStream(slice) >> value;
+            QDataStream(slice) >> value;
 
-      this->values.append(value);
+            this->values.append(value);
 
-      value_marker += sizeof(value);
-    } break;
-    case 'f': {
-      float value = 0.0f;
+            value_marker += sizeof(value);
+        } break;
+        case 'f': {
+            float value = 0.0f;
 
-      QByteArray slice = datagram->data().sliced(value_marker, sizeof(value));
+            QByteArray slice = datagram->data().sliced(value_marker, sizeof(value));
 
-      QDataStream stream(slice);
-      stream.setFloatingPointPrecision(QDataStream::SinglePrecision);
+            QDataStream stream(slice);
+            stream.setFloatingPointPrecision(QDataStream::SinglePrecision);
 
-      stream >> value;
+            stream >> value;
 
-      this->values.append(value);
+            this->values.append(value);
 
-      value_marker += sizeof(value);
-    } break;
-    case 's': {
-      qsizetype string_length =
-          datagram->data().indexOf('\0', value_marker) - value_marker;
+            value_marker += sizeof(value);
+        } break;
+        case 's': {
+            qsizetype string_length = datagram->data().indexOf('\0', value_marker) - value_marker;
 
-      QByteArray slice = datagram->data().sliced(value_marker, string_length);
+            QByteArray slice = datagram->data().sliced(value_marker, string_length);
 
-      QString value(slice);
+            QString value(slice);
 
-      this->values.append(value);
+            this->values.append(value);
 
-      value_marker = value_marker + string_length + 4 - string_length % 4;
-    } break;
-    case 'b': {
-      qint32 blob_size = 0;
+            value_marker = value_marker + string_length + 4 - string_length % 4;
+        } break;
+        case 'b': {
+            qint32 blob_size = 0;
 
-      QByteArray slice =
-          datagram->data().sliced(value_marker, sizeof(blob_size));
+            QByteArray slice = datagram->data().sliced(value_marker, sizeof(blob_size));
 
-      QDataStream(slice) >> blob_size;
+            QDataStream(slice) >> blob_size;
 
-      QByteArray blob =
-          datagram->data().sliced(value_marker + sizeof(blob_size), blob_size);
+            QByteArray blob = datagram->data().sliced(value_marker + sizeof(blob_size), blob_size);
 
-      qDebug() << "blob_size:" << blob_size;
+            qDebug() << "blob_size:" << blob_size;
 
-      this->values.append(blob);
+            this->values.append(blob);
 
-      value_marker = value_marker + blob_size + 4 - blob_size % 4;
-    } break;
-    case 'T': {
-      this->values.append(true);
-    } break;
-    case 'F': {
-      this->values.append(false);
-    } break;
-    case 'N': {
-      this->values.append(QChar::Null);
-    } break;
+            value_marker = value_marker + blob_size + 4 - blob_size % 4;
+        } break;
+        case 'T': {
+            this->values.append(true);
+        } break;
+        case 'F': {
+            this->values.append(false);
+        } break;
+        case 'N': {
+            this->values.append(QChar::Null);
+        } break;
+        }
     }
-  }
 }
 
 Osc::Message::Message(QHostAddress destinationAddress, quint16 destinationPort,
-                      QHostAddress sourceAddress, quint16 sourcePort,
-                      QString address, QList<QVariant> values) {
-  this->destinationAddress = destinationAddress;
-  this->destinationPort = destinationPort;
-  this->sourceAddress = sourceAddress;
-  this->sourcePort = sourcePort;
+    QHostAddress sourceAddress, quint16 sourcePort,
+    QString address, QList<QVariant> values)
+{
+    this->destinationAddress = destinationAddress;
+    this->destinationPort = destinationPort;
+    this->sourceAddress = sourceAddress;
+    this->sourcePort = sourcePort;
 
-  this->address = address;
-  this->values = values;
+    this->address = address;
+    this->values = values;
 }
 
-Osc::Message::Message(QString address, QList<QVariant> values) {
-  this->address = address;
-  this->values = values;
+Osc::Message::Message(QString address, QList<QVariant> values)
+{
+    this->address = address;
+    this->values = values;
 }
 
-std::shared_ptr<Osc::Message> Osc::Message::response() {
-  std::shared_ptr<Osc::Message> response(new Osc::Message(
-      this->sourceAddress, this->sourcePort, this->destinationAddress,
-      this->destinationPort, this->address, QList<QVariant>()));
-  return response;
+Osc::Message Osc::Message::response()
+{
+    Osc::Message response(
+        this->sourceAddress, this->sourcePort, this->destinationAddress,
+        this->destinationPort, this->address, QList<QVariant>());
+    return response;
 }
 
-std::shared_ptr<Osc::Message> Osc::Message::response(QString address) {
-  std::shared_ptr<Osc::Message> response = this->response();
+Osc::Message Osc::Message::response(QString address)
+{
+    Osc::Message response = this->response();
 
-  response->address = address;
+    response.address = address;
 
-  return response;
+    return response;
 }
 
-QString Osc::Message::format() {
-  QVariant element;
-  QString format;
+QString Osc::Message::format()
+{
+    QVariant element;
+    QString format;
 
-  foreach (element, values) {
-    switch (element.userType()) {
-    case (QMetaType::UInt):
-    case (QMetaType::Int): {
-      format.append('i');
-    } break;
-    case (QMetaType::Bool): {
-      format.append(element.toBool() ? 'T' : 'F');
-    } break;
-    case (QMetaType::Float): {
-      format.append('f');
-    } break;
-    case (QMetaType::QString): {
-      format.append('s');
-    } break;
-    case (QMetaType::QByteArray): {
-      format.append('b');
-    } break;
+    foreach (element, values) {
+        switch (element.userType()) {
+        case (QMetaType::UInt):
+        case (QMetaType::Int): {
+            format.append('i');
+        } break;
+        case (QMetaType::Bool): {
+            format.append(element.toBool() ? 'T' : 'F');
+        } break;
+        case (QMetaType::Float): {
+            format.append('f');
+        } break;
+        case (QMetaType::QString): {
+            format.append('s');
+        } break;
+        case (QMetaType::QByteArray): {
+            format.append('b');
+        } break;
+        }
     }
-  }
 
-  return format;
+    return format;
 }
 
-QByteArray Osc::Message::toByteArray() {
-  QByteArray data;
-  {
-    QByteArray address = this->address.toLatin1();
-    address.append(QChar::Null);
+QByteArray Osc::Message::toByteArray()
+{
+    QByteArray data;
+    {
+        QByteArray address = this->address.toLatin1();
+        address.append(QChar::Null);
 
-    while (address.length() % 4 > 0) {
-      address.append(QChar::Null);
+        while (address.length() % 4 > 0) {
+            address.append(QChar::Null);
+        }
+
+        data.append(address);
+    }
+    {
+        QByteArray format;
+
+        format.append(',');
+        format.append(this->format().toLatin1());
+        format.append(QChar::Null);
+
+        while (format.length() % 4 > 0) {
+            format.append(QChar::Null);
+        };
+
+        data.append(format);
     }
 
-    data.append(address);
-  }
-  {
-    QByteArray format;
+    QVariant element;
 
-    format.append(',');
-    format.append(this->format().toLatin1());
-    format.append(QChar::Null);
+    foreach (element, values) {
+        switch (element.userType()) {
+        case (QMetaType::UInt): {
+            QByteArray uint_value;
+            QDataStream stream(&uint_value, QIODevice::WriteOnly);
+            stream << element.toUInt();
+            data.append(uint_value);
+        } break;
+        case (QMetaType::Int): {
+            QByteArray int_value;
+            QDataStream stream(&int_value, QIODevice::WriteOnly);
+            stream << element.toInt();
+            data.append(int_value);
+        } break;
+        case (QMetaType::Float): {
+            QByteArray float_value;
+            QDataStream stream(&float_value, QIODevice::WriteOnly);
+            stream.setFloatingPointPrecision(QDataStream::SinglePrecision);
+            stream << element.toFloat();
+            data.append(float_value);
+        } break;
+        case (QMetaType::QString): {
+            QByteArray string_value = element.toString().toLatin1();
+            string_value.append(QChar::Null);
 
-    while (format.length() % 4 > 0) {
-      format.append(QChar::Null);
-    };
+            while (string_value.length() % 4 > 0) {
+                string_value.append(QChar::Null);
+            };
 
-    data.append(format);
-  }
+            data.append(string_value);
+        } break;
+        case (QMetaType::QByteArray): {
+            QByteArray blob_value = element.toByteArray();
+            blob_value.append(QChar::Null);
 
-  QVariant element;
+            while (blob_value.length() % 4 > 0) {
+                blob_value.append(QChar::Null);
+            };
 
-  foreach (element, values) {
-    switch (element.userType()) {
-    case (QMetaType::UInt): {
-      QByteArray uint_value;
-      QDataStream stream(&uint_value, QIODevice::WriteOnly);
-      stream << element.toUInt();
-      data.append(uint_value);
-    } break;
-    case (QMetaType::Int): {
-      QByteArray int_value;
-      QDataStream stream(&int_value, QIODevice::WriteOnly);
-      stream << element.toInt();
-      data.append(int_value);
-    } break;
-    case (QMetaType::Float): {
-      QByteArray float_value;
-      QDataStream stream(&float_value, QIODevice::WriteOnly);
-      stream.setFloatingPointPrecision(QDataStream::SinglePrecision);
-      stream << element.toFloat();
-      data.append(float_value);
-    } break;
-    case (QMetaType::QString): {
-      QByteArray string_value = element.toString().toLatin1();
-      string_value.append(QChar::Null);
-
-      while (string_value.length() % 4 > 0) {
-        string_value.append(QChar::Null);
-      };
-
-      data.append(string_value);
-    } break;
-    case (QMetaType::QByteArray): {
-      QByteArray blob_value = element.toByteArray();
-      blob_value.append(QChar::Null);
-
-      while (blob_value.length() % 4 > 0) {
-        blob_value.append(QChar::Null);
-      };
-
-      data.append(blob_value);
-    } break;
+            data.append(blob_value);
+        } break;
+        }
     }
-  }
 
-  return data;
+    return data;
 }
 
-QString Osc::Message::toString() {
-  QString valueString = "\n";
+QString Osc::Message::toString()
+{
+    QString valueString = "\n";
 
-  foreach (QVariant value, this->values) {
-    if (value.typeId() == QMetaType::Int) {
-      valueString += QString("i(%1)\n").arg(value.toInt());
-      continue;
+    foreach (QVariant value, this->values) {
+        if (value.typeId() == QMetaType::Int) {
+            valueString += QString("i(%1)\n").arg(value.toInt());
+            continue;
+        }
+        if (value.typeId() == QMetaType::Bool) {
+            valueString += QString("b(%1)\n").arg(value.toBool());
+            continue;
+        }
+        if (value.typeId() == QMetaType::Float) {
+            valueString += QString("f(%1)\n").arg(value.toFloat());
+            continue;
+        }
     }
-    if (value.typeId() == QMetaType::Bool) {
-      valueString += QString("b(%1)\n").arg(value.toBool());
-      continue;
-    }
-    if (value.typeId() == QMetaType::Float) {
-      valueString += QString("f(%1)\n").arg(value.toFloat());
-      continue;
-    }
-  }
 
-  return QAbstractSocket::tr(
-             "Sender: %1:%2, Receiver: %3:%4, Address: %5, Values: %6")
-      .arg(this->sourceAddress.toString())
-      .arg(this->sourcePort)
-      .arg(this->destinationAddress.toString())
-      .arg(this->destinationPort)
-      .arg(this->address)
-      .arg(valueString);
+    return QAbstractSocket::tr(
+        "Sender: %1:%2, Receiver: %3:%4, Address: %5, Values: %6")
+        .arg(this->sourceAddress.toString())
+        .arg(this->sourcePort)
+        .arg(this->destinationAddress.toString())
+        .arg(this->destinationPort)
+        .arg(this->address)
+        .arg(valueString);
 }

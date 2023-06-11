@@ -10,28 +10,28 @@
 namespace Osc {
 class Message {
 public:
-  Message(QNetworkDatagram* datagram);
-  Message(QHostAddress destinationAddress, quint16 destinationPort,
-          QHostAddress sourceAddress, quint16 sourcePort, QString address,
-          QList<QVariant> values);
-  Message(QString address, QList<QVariant> values);
+    Message(QNetworkDatagram* datagram);
+    Message(QHostAddress destinationAddress, quint16 destinationPort,
+        QHostAddress sourceAddress, quint16 sourcePort, QString address,
+        QList<QVariant> values);
+    Message(QString address, QList<QVariant> values);
 
-  std::shared_ptr<Osc::Message> response();
-  std::shared_ptr<Osc::Message> response(QString address);
+    Osc::Message response();
+    Osc::Message response(QString address);
 
-  QHostAddress sourceAddress;
-  quint16 sourcePort;
+    QHostAddress sourceAddress;
+    quint16 sourcePort;
 
-  QHostAddress destinationAddress;
-  quint16 destinationPort;
+    QHostAddress destinationAddress;
+    quint16 destinationPort;
 
-  QString address;
+    QString address;
 
-  QString format();
-  QVariantList values;
+    QString format();
+    QVariantList values;
 
-  QByteArray toByteArray();
+    QByteArray toByteArray();
 
-  QString toString();
+    QString toString();
 };
 } // namespace Osc

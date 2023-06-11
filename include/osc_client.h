@@ -1,26 +1,33 @@
 #pragma once
 
-#include <QHostAddress>
-#include <QList>
-#include <QTime>
+#include "osc_message.h"
+
+#include <QDnsLookup>
+#include <QDnsServiceRecord>
+#include <QTcpSocket>
+
 #include <memory>
 
 namespace Osc {
 
 class Client : public QObject {
-  Q_OBJECT
+    Q_OBJECT
 public:
-  Client(QHostAddress address, quint16 port);
-  ~Client();
+    Client(QTcpSocket *socket, QString hostname = "");
 
-  QHostAddress address();
-  quint16 port();
-  QTime heartbeat();
-  void setHeartbeat();
+    ~Client();
+
+signals:
+    void connected();
+    void disconnected(Osc::Client *client);
+    void connectionFailed();
+    void received(Osc::Message message);
 
 private:
-  QHostAddress _address;
-  quint16 _port;
-  QTime _heartbeat;
+    QTcpSocket* _socket;
+    QString _hostname;
+
+private slots:
+    void socketDisconnected();
 };
 } // namespace Osc

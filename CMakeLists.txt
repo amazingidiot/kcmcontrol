@@ -21,16 +21,26 @@ FIND_PACKAGE (
 
 set(SOURCE_FILES
     src/main.cpp
+    src/client_listener.cpp
+    src/client_manager.cpp
+    src/client_watcher.cpp
+    src/midi_output.cpp
     src/osc_client.cpp
+    src/osc_endpoint.cpp
     src/osc_message.cpp
-    src/osc_server.cpp
+    src/osc_processor.cpp
     src/sigwatch.cpp
 )
 
 set(HEADER_FILES
+    include/client_listener.h
+    include/client_manager.h
+    include/client_watcher.h
+    include/midi_output.h
     include/osc_client.h
+    include/osc_endpoint.h
     include/osc_message.h
-    include/osc_server.h
+    include/osc_processor.h
     include/sigwatch.h
 )
 
@@ -47,4 +57,6 @@ install(TARGETS ${PROGRAM_NAME}
 TARGET_LINK_LIBRARIES ( ${PROGRAM_NAME}
   Qt6::Core
   Qt6::Network
+  jack
+  rtmidi
 )

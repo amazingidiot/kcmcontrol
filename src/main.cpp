@@ -1,50 +1,30 @@
 #include <QCoreApplication>
 #include <QLocale>
 #include <QSettings>
-#include <QTranslator>
 #include <QtDebug>
 
-#include "osc_server.h"
+#include "client_manager.h"
 #include "sigwatch.h"
 
-int main(int argc, char* argv[]) {
-  QCoreApplication a(argc, argv);
+int main(int argc, char* argv[])
+{
+    QCoreApplication a(argc, argv);
 
-  qSetMessagePattern("[%{time} %{type}] %{message}");
+    qSetMessagePattern("[%{time} %{type}] %{message}");
 
-  QTranslator translator;
-  const QStringList uiLanguages = QLocale::system().uiLanguages();
-  for (const QString& locale : uiLanguages) {
-    qDebug() << QCoreApplication::tr("Trying to load language %1")
-                    .arg(QLocale(locale).name());
+    UnixSignalWatcher watcher;
 
-    QString baseName = "elzac_" + QLocale(locale).name();
+    watcher.watchForSignal(SIGINT);
+    watcher.watchForSignal(SIGTERM);
 
-    if (translator.load(":/i18n/" + baseName)) {
-      qDebug() << QCoreApplication::tr("Loaded language %1")
-                      .arg(translator.language());
+    QObject::connect(&watcher, &UnixSignalWatcher::unixSignal, &a,
+        &QCoreApplication::quit);
 
-      a.installTranslator(&translator);
-      break;
-    }
-  }
+    Client::Manager manager;
 
-  UnixSignalWatcher watcher;
+    int result = a.exec();
 
-  watcher.watchForSignal(SIGINT);
-  watcher.watchForSignal(SIGTERM);
+    qInfo() << "Quitting KCMControl";
 
-  QObject::connect(&watcher, &UnixSignalWatcher::unixSignal, &a,
-                   &QCoreApplication::quit);
-
-  Osc::Server server;
-
-  server.setPort(31032);
-  server.setEnabled(true);
-
-  int result = a.exec();
-
-  qInfo() << QCoreApplication::tr("Quitting elzac");
-
-  return result;
+    return result;
 }

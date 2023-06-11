@@ -37,18 +37,18 @@ class UnixSignalWatcherPrivate;
  */
 
 class UnixSignalWatcher : public QObject {
-  Q_OBJECT
+    Q_OBJECT
 public:
-  explicit UnixSignalWatcher(QObject* parent = 0);
-  ~UnixSignalWatcher();
+    explicit UnixSignalWatcher(QObject* parent = 0);
+    ~UnixSignalWatcher();
 
-  void watchForSignal(int signal);
+    void watchForSignal(int signal);
 
 signals:
-  void unixSignal(int signal);
+    void unixSignal(int signal);
 
 private:
-  UnixSignalWatcherPrivate* const d_ptr;
-  Q_DECLARE_PRIVATE(UnixSignalWatcher)
-  Q_PRIVATE_SLOT(d_func(), void _q_onNotify(int))
+    UnixSignalWatcherPrivate* const d_ptr;
+    Q_DECLARE_PRIVATE(UnixSignalWatcher)
+    Q_PRIVATE_SLOT(d_func(), void _q_onNotify(int))
 };

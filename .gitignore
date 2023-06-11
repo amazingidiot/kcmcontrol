@@ -75,3 +75,5 @@ Thumbs.db
 build/
 .cache/
 CMakeLists.txt.user
+.kdev4
+*.kdev4

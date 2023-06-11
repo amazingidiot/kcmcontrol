@@ -37,38 +37,39 @@
  * \see http://qt-project.org/doc/qt-5.0/qtdoc/unix-signals.html
  */
 class UnixSignalWatcherPrivate : public QObject {
-  UnixSignalWatcher* const q_ptr;
-  Q_DECLARE_PUBLIC(UnixSignalWatcher)
+    UnixSignalWatcher* const q_ptr;
+    Q_DECLARE_PUBLIC(UnixSignalWatcher)
 
 public:
-  UnixSignalWatcherPrivate(UnixSignalWatcher* q);
-  ~UnixSignalWatcherPrivate();
+    UnixSignalWatcherPrivate(UnixSignalWatcher* q);
+    ~UnixSignalWatcherPrivate();
 
-  void watchForSignal(int signal);
-  static void signalHandler(int signal);
+    void watchForSignal(int signal);
+    static void signalHandler(int signal);
 
-  void _q_onNotify(int sockfd);
+    void _q_onNotify(int sockfd);
 
 private:
-  static int sockpair[2];
-  QSocketNotifier* notifier;
-  QList<int> watchedSignals;
+    static int sockpair[2];
+    QSocketNotifier* notifier;
+    QList<int> watchedSignals;
 };
 
 int UnixSignalWatcherPrivate::sockpair[2];
 
 UnixSignalWatcherPrivate::UnixSignalWatcherPrivate(UnixSignalWatcher* q)
-    : q_ptr(q) {
-  // Create socket pair
-  if (::socketpair(AF_UNIX, SOCK_STREAM, 0, sockpair)) {
-    qDebug() << "UnixSignalWatcher: socketpair: " << ::strerror(errno);
-    return;
-  }
+    : q_ptr(q)
+{
+    // Create socket pair
+    if (::socketpair(AF_UNIX, SOCK_STREAM, 0, sockpair)) {
+        qDebug() << "UnixSignalWatcher: socketpair: " << ::strerror(errno);
+        return;
+    }
 
-  // Create a notifier for the read end of the pair
-  notifier = new QSocketNotifier(sockpair[1], QSocketNotifier::Read);
-  QObject::connect(notifier, SIGNAL(activated(int)), q, SLOT(_q_onNotify(int)));
-  notifier->setEnabled(true);
+    // Create a notifier for the read end of the pair
+    notifier = new QSocketNotifier(sockpair[1], QSocketNotifier::Read);
+    QObject::connect(notifier, SIGNAL(activated(int)), q, SLOT(_q_onNotify(int)));
+    notifier->setEnabled(true);
 }
 
 UnixSignalWatcherPrivate::~UnixSignalWatcherPrivate() { delete notifier; }
@@ -79,54 +80,60 @@ UnixSignalWatcherPrivate::~UnixSignalWatcherPrivate() { delete notifier; }
  * This provides a way to break out of the asynchronous context from which the
  * signal handler is called and back into the Qt event loop.
  */
-void UnixSignalWatcherPrivate::watchForSignal(int signal) {
-  if (watchedSignals.contains(signal)) {
-    qDebug() << "Already watching for signal" << signal;
-    return;
-  }
+void UnixSignalWatcherPrivate::watchForSignal(int signal)
+{
+    if (watchedSignals.contains(signal)) {
+        qDebug() << "Already watching for signal" << signal;
+        return;
+    }
 
-  // Register a sigaction which will write to the socket pair
-  struct sigaction sigact;
-  sigact.sa_handler = UnixSignalWatcherPrivate::signalHandler;
-  sigact.sa_flags = 0;
-  ::sigemptyset(&sigact.sa_mask);
-  sigact.sa_flags |= SA_RESTART;
-  if (::sigaction(signal, &sigact, NULL)) {
-    qDebug() << "UnixSignalWatcher: sigaction: " << ::strerror(errno);
-    return;
-  }
+    // Register a sigaction which will write to the socket pair
+    struct sigaction sigact;
+    sigact.sa_handler = UnixSignalWatcherPrivate::signalHandler;
+    sigact.sa_flags = 0;
+    ::sigemptyset(&sigact.sa_mask);
+    sigact.sa_flags |= SA_RESTART;
+    if (::sigaction(signal, &sigact, NULL)) {
+        qDebug() << "UnixSignalWatcher: sigaction: " << ::strerror(errno);
+        return;
+    }
 
-  watchedSignals.append(signal);
+    watchedSignals.append(signal);
 }
 
 /*!
  * Called when a Unix \a signal is received. Write to the socket to wake up the
  * QSocketNotifier.
  */
-void UnixSignalWatcherPrivate::signalHandler(int signal) {
-  ssize_t nBytes = ::write(sockpair[0], &signal, sizeof(signal));
-  Q_UNUSED(nBytes);
+void UnixSignalWatcherPrivate::signalHandler(int signal)
+{
+    ssize_t nBytes = ::write(sockpair[0], &signal, sizeof(signal));
+    Q_UNUSED(nBytes);
 }
 
 /*!
  * Called when the signal handler has written to the socket pair. Emits the Unix
  * signal as a Qt signal.
  */
-void UnixSignalWatcherPrivate::_q_onNotify(int sockfd) {
-  Q_Q(UnixSignalWatcher);
+void UnixSignalWatcherPrivate::_q_onNotify(int sockfd)
+{
+    Q_Q(UnixSignalWatcher);
 
-  int signal;
-  ssize_t nBytes = ::read(sockfd, &signal, sizeof(signal));
-  Q_UNUSED(nBytes);
-  qDebug() << "Caught signal:" << ::strsignal(signal);
-  emit q->unixSignal(signal);
+    int signal;
+    ssize_t nBytes = ::read(sockfd, &signal, sizeof(signal));
+    Q_UNUSED(nBytes);
+    qDebug() << "Caught signal:" << ::strsignal(signal);
+    emit q->unixSignal(signal);
 }
 
 /*!
  * Create a new UnixSignalWatcher as a child of the given \a parent.
  */
 UnixSignalWatcher::UnixSignalWatcher(QObject* parent)
-    : QObject(parent), d_ptr(new UnixSignalWatcherPrivate(this)) {}
+    : QObject(parent)
+    , d_ptr(new UnixSignalWatcherPrivate(this))
+{
+}
 
 /*!
  * Destroy this UnixSignalWatcher.
@@ -139,9 +146,10 @@ UnixSignalWatcher::~UnixSignalWatcher() { delete d_ptr; }
  * After calling this method you can \c connect() to the unixSignal() Qt signal
  * to be notified when the Unix signal is received.
  */
-void UnixSignalWatcher::watchForSignal(int signal) {
-  Q_D(UnixSignalWatcher);
-  d->watchForSignal(signal);
+void UnixSignalWatcher::watchForSignal(int signal)
+{
+    Q_D(UnixSignalWatcher);
+    d->watchForSignal(signal);
 }
 
 /*!
