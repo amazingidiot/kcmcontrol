@@ -1,6 +1,7 @@
 #pragma once
 
-#include "midi_output.h"
+#include "jack_client.h"
+#include "jack_output.h"
 #include "osc_endpoint.h"
 #include "osc_message.h"
 
@@ -21,7 +22,8 @@ signals:
 private:
     QList<Osc::Endpoint*> _endpoints;
 
-    Midi::Output *_output_midi;
-    Midi::Output *_output_control;
+    Jack::Client* _jack_client;
+    Jack::Output* _output_midi;
+    Jack::Output* _output_control;
 };
 }

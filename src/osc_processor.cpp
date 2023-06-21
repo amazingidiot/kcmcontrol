@@ -4,8 +4,10 @@ namespace Osc {
 Processor::Processor(QObject *parent)
     : QObject{parent}
 {
-    _output_midi = new Midi::Output("KCMControl", "MIDI", this);
-    _output_control = new Midi::Output("KCMControl", "Control", this);
+    _jack_client = new Jack::Client("KCMControl", this);
+
+    _output_midi = _jack_client->addOutputPort("MIDI");
+    _output_control = _jack_client->addOutputPort("Control");
 
 #pragma region
 /*

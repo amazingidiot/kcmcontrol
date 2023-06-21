@@ -1,0 +1,74 @@
+#include "jack_client.h"
+
+#include "jack_output.h"
+
+#include <QDebug>
+
+namespace Jack {
+Client::Client(QString clientName, QObject* parent)
+    : QObject{parent}
+{
+    jack_options_t options;
+    jack_status_t* status;
+
+    qDebug() << "Creating jack client";
+    if ((_jack_client = jack_client_open(clientName.toStdString().c_str(), JackNullOption, NULL))
+        == 0) {
+        qCritical() << "Failed to open jack client:" << status;
+        return;
+    }
+
+    qDebug() << "Setting jack callbacks";
+    jack_set_process_callback(_jack_client, Jack::Client::jack_callback, this);
+
+    qDebug() << "Activating jack client";
+    jack_activate(_jack_client);
+}
+
+Client::~Client()
+{
+    for (int i = 0; i < _output_ports.length(); i++) {
+        Output* output = _output_ports.at(i);
+
+        delete output;
+    }
+
+    qDebug() << "Closing jack client";
+    jack_client_close(_jack_client);
+}
+
+jack_client_t* Client::jack_client() const
+{
+    return _jack_client;
+}
+
+Output* Client::addOutputPort(QString portName)
+{
+    jack_port_t* port;
+
+    qDebug() << "Creating midi port" << portName;
+    if ((port = jack_port_register(_jack_client,
+                                   portName.toStdString().c_str(),
+                                   JACK_DEFAULT_MIDI_TYPE,
+                                   JackPortFlags::JackPortIsOutput,
+                                   0))
+        == NULL) {
+        qCritical() << "Could not register port" << portName;
+        return nullptr;
+    };
+
+    Output* output = new Output(port);
+    _output_ports.append(output);
+
+    return output;
+}
+
+void Client::removeOutputPort(Output* output) {}
+
+int Client::jack_callback(jack_nframes_t nframes, void* arg)
+{
+    Jack::Client* client = static_cast<Jack::Client*>(arg);
+
+    return 0;
+}
+} // namespace Jack
