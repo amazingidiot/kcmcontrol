@@ -17,6 +17,14 @@ public:
 public slots:
     void process(Osc::Message message);
 
+    // Endpoints
+    void endpointDebugOutput(Osc::Message receivedMessage);
+
+    void endpointNoteOn(Osc::Message receivedMessage);
+    void endpointNoteOff(Osc::Message receivedMessage);
+    void endpointPedalDamper(Osc::Message receivedMessage);
+    void endpointPedalExpression(Osc::Message receivedMessage);
+
 signals:
 
 private:

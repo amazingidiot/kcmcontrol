@@ -28,6 +28,7 @@ private:
     QString _hostname;
 
 private slots:
-    void socketDisconnected();
+    void onSocketDisconnected();
+    void onReadyRead();
 };
 } // namespace Osc

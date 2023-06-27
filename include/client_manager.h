@@ -16,18 +16,17 @@ public:
     explicit Manager(quint16 portListener = 8000, QString serviceName = "kcmcontrol", QObject* parent = nullptr);
     ~Manager();
 
-    std::shared_ptr<Osc::Client> getClient(QHostAddress address, quint16 port);
+    Osc::Client* getClient(QHostAddress address, quint16 port);
 
 signals:
-    void clientAdded(std::shared_ptr<Osc::Client> client);
+    void clientAdded(Osc::Client* client);
 
 public slots:
-    void addClient(std::shared_ptr<Osc::Client> client);
-    void removeClient(std::shared_ptr<Osc::Client> client);
+    void addClient(Osc::Client* client);
     void removeClient(Osc::Client *client);
 
 private:
-    QList<std::shared_ptr<Osc::Client>> _clients;
+    QList<Osc::Client*> _clients;
 
     Watcher *_watcher;
     Listener* _listener;

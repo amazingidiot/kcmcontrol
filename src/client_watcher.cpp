@@ -50,5 +50,13 @@ void Watcher::lookupFinished()
 {
     // Process clients here
     qDebug() << "Processing lookup results";
+
+    foreach (QDnsServiceRecord record, _dnsLookup->serviceRecords()) {
+        qDebug() << QString("%1:%2 %3 -> %4")
+                        .arg(record.name())
+                        .arg(record.port())
+                        .arg(record.priority())
+                        .arg(record.target());
+    }
 }
 }
