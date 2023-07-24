@@ -1,7 +1,6 @@
 #pragma once
 
 #include "osc_message.h"
-
 #include <QObject>
 #include <QRegularExpression>
 

@@ -1,26 +1,28 @@
 #pragma once
 
 #include "osc_client.h"
-
 #include <QObject>
 #include <QTcpServer>
 #include <QTcpSocket>
 
-#include <memory>
-
 namespace Client {
+class Manager;
+
 class Listener : public QObject {
     Q_OBJECT
 public:
-    explicit Listener(quint16 portListener, QObject* parent = nullptr);
+    explicit Listener(Manager* parent);
     ~Listener();
+
+    int init(quint16 portListener);
 signals:
-    void clientConnected(std::shared_ptr<Osc::Client> client);
+    void clientConnected(Osc::Client* client);
 
 private:
-    QTcpServer *_server;
+    Manager* _manager;
+    QTcpServer* _server;
 
 private slots:
-    void handleClientConnection();
+    void onClientConnection();
 };
-}
+} // namespace Client

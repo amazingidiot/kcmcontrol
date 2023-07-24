@@ -25,6 +25,7 @@ set(SOURCE_FILES
     src/client_manager.cpp
     src/client_watcher.cpp
     src/jack_client.cpp
+    src/jack_input.cpp
     src/jack_output.cpp
     src/osc_client.cpp
     src/osc_endpoint.cpp
@@ -38,6 +39,7 @@ set(HEADER_FILES
     include/client_manager.h
     include/client_watcher.h
     include/jack_client.h
+    include/jack_input.h
     include/jack_output.h
     include/osc_client.h
     include/osc_endpoint.h

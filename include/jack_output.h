@@ -1,7 +1,6 @@
 #pragma once
 
 #include <QObject>
-
 #include <jack/jack.h>
 #include <jack/midiport.h>
 
@@ -21,9 +20,10 @@ public:
     QString portName();
 
 private:
-    explicit Output(jack_port_t* port);
+    explicit Output(jack_port_t* port, jack_client_t* client);
     ~Output();
 
-    jack_port_t* _port;
+    jack_port_t* _jack_port;
+    jack_client_t* _jack_client;
 };
 } // namespace Jack

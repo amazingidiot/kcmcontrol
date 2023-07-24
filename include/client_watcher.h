@@ -1,36 +1,41 @@
 #pragma once
 
 #include "osc_client.h"
-
 #include <QDnsLookup>
 #include <QDnsServiceRecord>
 #include <QObject>
 #include <QTcpSocket>
 #include <QTimer>
 
-#include <memory>
 namespace Client {
-class Watcher : public QObject
-{
+class Manager;
+
+class Watcher : public QObject {
     Q_OBJECT
 public:
-    explicit Watcher(QString serviceName, QObject *parent = nullptr);
+    explicit Watcher(Manager* parent = nullptr);
     ~Watcher();
+
+    int init(QString serviceName);
 
     quint32 updateInterval() const;
     void setUpdateInterval(quint32 newUpdateInterval);
 
 signals:
-    void clientConnected(std::shared_ptr<Osc::Client> client);
+    void clientConnected(Osc::Client* client);
+
+public slots:
+    void updateClients();
 
 private:
+    Manager* _manager;
+
     quint32 _updateInterval = 5000;
 
-    QTimer *_updateTimer;
+    QTimer* _updateTimer;
 
-    QDnsLookup *_dnsLookup;
+    QDnsLookup* _dnsLookup;
 private slots:
-    void updateClients();
-    void lookupFinished();
+    void onLookupFinished();
 };
 } // namespace Client

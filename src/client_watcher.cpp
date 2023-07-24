@@ -1,19 +1,34 @@
 #include "client_watcher.h"
-
+#include "client_manager.h"
 #include <QDebug>
 
 namespace Client {
-Watcher::Watcher(QString serviceName, QObject* parent)
+Watcher::Watcher(Manager* parent)
     : QObject { parent }
 {
+    qDebug() << "Creating watcher";
+
+    _manager = parent;
+}
+
+Watcher::~Watcher()
+{
+    qDebug() << "Destroying watcher";
+}
+
+int Watcher::init(QString serviceName)
+{
     qDebug() << "Starting watcher for service" << serviceName;
+
+    QString dnsServiceName = QString("%1._osc._tcp.local").arg(serviceName);
+    qDebug() << QString("DNS Servicename: %1").arg(dnsServiceName);
 
     _dnsLookup = new QDnsLookup(this);
 
     _dnsLookup->setType(QDnsLookup::SRV);
-    _dnsLookup->setName("_osc._tcp.vikey.local");
+    _dnsLookup->setName(dnsServiceName);
 
-    connect(_dnsLookup, &QDnsLookup::finished, this, &Client::Watcher::lookupFinished);
+    connect(_dnsLookup, &QDnsLookup::finished, this, &Client::Watcher::onLookupFinished);
 
     _updateTimer = new QTimer(this);
 
@@ -21,12 +36,11 @@ Watcher::Watcher(QString serviceName, QObject* parent)
 
     connect(_updateTimer, &QTimer::timeout, this, &Client::Watcher::updateClients);
 
-    updateClients();
-}
+    // _updateTimer->start();
 
-Watcher::~Watcher()
-{
-    qDebug() << "Destroying watcher";
+    updateClients();
+
+    return 0;
 }
 
 quint32 Watcher::updateInterval() const
@@ -46,17 +60,18 @@ void Watcher::updateClients()
     _dnsLookup->lookup();
 }
 
-void Watcher::lookupFinished()
+void Watcher::onLookupFinished()
 {
     // Process clients here
     qDebug() << "Processing lookup results";
 
     foreach (QDnsServiceRecord record, _dnsLookup->serviceRecords()) {
-        qDebug() << QString("%1:%2 %3 -> %4")
-                        .arg(record.name())
-                        .arg(record.port())
-                        .arg(record.priority())
-                        .arg(record.target());
+        qDebug().noquote() << QString("%1:%2 -> %3")
+                                  .arg(record.name())
+                                  .arg(record.port())
+                                  .arg(record.target());
+
+        ::Osc::Client* client = new ::Osc::Client(_manager, record.target(), record.port());
     }
 }
 }

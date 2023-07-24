@@ -10,7 +10,7 @@
 namespace Osc {
 class Message {
 public:
-    Message(QNetworkDatagram* datagram);
+    Message();
     Message(QHostAddress destinationAddress, quint16 destinationPort,
         QHostAddress sourceAddress, quint16 sourcePort, QString address,
         QList<QVariant> values);

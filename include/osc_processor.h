@@ -1,12 +1,15 @@
 #pragma once
 
 #include "jack_client.h"
+#include "jack_input.h"
 #include "jack_output.h"
 #include "osc_endpoint.h"
 #include "osc_message.h"
-
 #include <QObject>
 
+namespace Client {
+class Watcher;
+}
 namespace Osc {
 class Processor : public QObject {
     Q_OBJECT
@@ -14,6 +17,7 @@ public:
     explicit Processor(QObject* parent = nullptr);
     ~Processor();
 
+    int init(::Client::Watcher* watcher);
 public slots:
     void process(Osc::Message message);
 
@@ -33,5 +37,7 @@ private:
     Jack::Client* _jack_client;
     Jack::Output* _output_midi;
     Jack::Output* _output_control;
+
+    ::Client::Watcher* _watcher;
 };
 }

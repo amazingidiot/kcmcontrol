@@ -1,10 +1,9 @@
+#include "client_manager.h"
+#include "sigwatch.h"
 #include <QCoreApplication>
 #include <QLocale>
 #include <QSettings>
 #include <QtDebug>
-
-#include "client_manager.h"
-#include "sigwatch.h"
 
 int main(int argc, char* argv[])
 {
@@ -21,6 +20,12 @@ int main(int argc, char* argv[])
         &QCoreApplication::quit);
 
     Client::Manager manager;
+
+    if (manager.init() < 0) {
+        qCritical() << "Could not initialize manager";
+
+        return -1;
+    }
 
     int result = a.exec();
 

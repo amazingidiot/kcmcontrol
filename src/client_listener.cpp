@@ -1,21 +1,12 @@
 #include "client_listener.h"
-
+#include "client_manager.h"
 #include <QDebug>
 
 namespace Client {
-Listener::Listener(quint16 portListener, QObject* parent)
+Listener::Listener(Manager* parent)
     : QObject { parent }
 {
-    qDebug() << "Starting listener on port" << portListener;
-
-    _server = new QTcpServer(this);
-    _server->listen(QHostAddress::Any, portListener);
-
-    if (!_server->isListening()) {
-        qCritical() << "Could not bind to" << _server->serverAddress() << _server->serverPort();
-    }
-
-    connect(_server, &QTcpServer::newConnection, this, &Listener::handleClientConnection);
+    _manager = parent;
 }
 
 Listener::~Listener()
@@ -26,12 +17,30 @@ Listener::~Listener()
     _server->deleteLater();
 }
 
-void Listener::handleClientConnection()
+int Listener::init(quint16 portListener)
+{
+    qDebug() << "Starting listener on port" << portListener;
+
+    _server = new QTcpServer(this);
+    _server->listen(QHostAddress::Any, portListener);
+
+    if (!_server->isListening()) {
+        qCritical() << "Could not bind to" << _server->serverAddress() << _server->serverPort();
+
+        return -1;
+    }
+
+    connect(_server, &QTcpServer::newConnection, this, &Listener::onClientConnection);
+
+    return 0;
+}
+
+void Listener::onClientConnection()
 {
     qDebug() << "New connections available";
 
     while (_server->hasPendingConnections()) {
-        std::shared_ptr<Osc::Client> client(new Osc::Client(_server->nextPendingConnection()));
+        Osc::Client* client = new Osc::Client(_manager, _server->nextPendingConnection());
 
         emit clientConnected(client);
     }
